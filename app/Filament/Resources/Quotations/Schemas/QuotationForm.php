@@ -15,6 +15,8 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
+use Filament\Forms\Components\FileUpload;
+
 class QuotationForm
 {
     public static function configure(Schema $schema): Schema
@@ -38,17 +40,45 @@ class QuotationForm
                                             ->searchable()
                                             ->required()
                                             ->preload()
+                                            ->live()
+                                            ->afterStateUpdated(function (Set $set, $state) {
+                                                if (! $state) return;
+                                                $customer = \App\Models\Customer::find($state);
+                                                if (! $customer) return;
+                                                 
+                                                 $initial = strtoupper($customer->initial ?? 'XX');
+                                                 $year = date('y');
+                                                 $month = date('m');
+                                                $prefix = "PMJ/{$initial}/{$year}/{$month}/";
+                                                
+                                                // Find last number for this prefix pattern to increment
+                                                $lastQuotation = \App\Models\Quotation::where('quotation_number', 'like', $prefix . '%')
+                                                    ->orderBy('quotation_number', 'desc')
+                                                    ->first();
+                                                
+                                                if ($lastQuotation) {
+                                                    // Extract the last 3 digits
+                                                    $lastSequence = intval(substr($lastQuotation->quotation_number, -3));
+                                                    $newSequence = str_pad($lastSequence + 1, 3, '0', STR_PAD_LEFT);
+                                                } else {
+                                                    $newSequence = '001';
+                                                }
+                                                
+                                                $set('quotation_number', $prefix . $newSequence);
+                                            })
                                             ->createOptionForm([
                                                 TextInput::make('company_name')->required(),
-                                                TextInput::make('name')->label('Contact Person'),
+                                                TextInput::make('initial')->label('Initial (e.g. M)')->required()->maxLength(5),
+                                                TextInput::make('name')->label('Buyer Name'),
                                                 TextInput::make('email')->email(),
                                             ])
                                             ->columnSpan(2), // Customer ambil 2 kolom (50%)
 
                                         TextInput::make('quotation_number')
                                             ->label('Quotation #')
-                                            ->default('QT-' . date('Ymd') . '-' . rand(1000, 9999))
+                                            ->readOnly()
                                             ->required()
+                                            ->unique('quotations', 'quotation_number', ignoreRecord: true)
                                             ->columnSpan(1),
 
                                         Select::make('status')
@@ -84,11 +114,11 @@ class QuotationForm
                                     ->hiddenLabel()
                                     ->relationship()
                                     ->schema([
-                                        Grid::make(12)
+                                        Grid::make(24)
                                             ->schema([
-                                                // Item & Desc (Span 5)
+                                                // Item & Desc (Span 4)
                                                 Group::make()
-                                                    ->columnSpan(5)
+                                                    ->columnSpan(16)
                                                     ->schema([
                                                         TextInput::make('item_name')
                                                             ->label('Item')
@@ -97,9 +127,18 @@ class QuotationForm
                                                         TextInput::make('description')
                                                             ->label('Description')
                                                             ->placeholder('Description (optional)'),
+
+                                                            // Image (Span 1)
+                                                        FileUpload::make('image')
+                                                            ->label('Attachment')
+                                                            ->directory('quotation-items')
+                                                            ->columnSpan(1),
                                                     ]),
 
-                                                // Metrics Row (Span 7)
+                                                // Metrics Row
+                                                Group::make()
+                                                    ->columnSpan(8)
+                                                    ->schema([
                                                 TextInput::make('quantity')
                                                     ->label('Qty')
                                                     ->numeric()
@@ -108,6 +147,11 @@ class QuotationForm
                                                     ->columnSpan(1)
                                                     ->live(onBlur: true)
                                                     ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+
+                                                TextInput::make('uom')
+                                                    ->label('UoM')
+                                                    ->placeholder('Unit')
+                                                    ->columnSpan(1),
 
                                                 TextInput::make('unit_price')
                                                     ->label('Price')
@@ -119,6 +163,8 @@ class QuotationForm
                                                     ->live(onBlur: true)
                                                     ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
 
+                                                    
+                                                    
                                                 TextInput::make('discount')
                                                     ->label('Disc %')
                                                     ->numeric()
@@ -142,6 +188,7 @@ class QuotationForm
                                                     ->numeric()
                                                     ->columnSpan(2)
                                                     ->prefix('Rp'),
+                                                    ]),
                                             ]),
                                     ])
                                     ->defaultItems(1)

@@ -9,9 +9,12 @@ class QuotationItem extends Model
 {
     protected $fillable = [
         'quotation_id',
+        'item_sequence',
         'item_name',
         'description',
+        'image',
         'quantity',
+        'uom',
         'unit_price',
         'discount',
         'vat_rate',

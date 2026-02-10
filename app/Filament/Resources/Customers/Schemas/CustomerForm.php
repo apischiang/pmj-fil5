@@ -17,8 +17,8 @@ class CustomerForm
                 Section::make('Customer Details')
                     ->schema([
                         TextInput::make('name')
-                            ->label('Contact Person')
-                            ->required(),
+                        ->label('Buyer')
+                        ->required(),
                         TextInput::make('company_name')
                             ->required(),
                         TextInput::make('initial')
