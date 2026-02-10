@@ -7,8 +7,10 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -18,99 +20,191 @@ class QuotationForm
     public static function configure(Schema $schema): Schema
     {
         return $schema
+            ->columns(1)
             ->components([
-                Section::make('Header')
+                // Menggunakan Group agar bisa full width tanpa grid kolom pembatas
+                Group::make()
+                    ->columnSpanFull()
                     ->schema([
-                        Select::make('customer_id')
-                            ->relationship('customer', 'company_name')
-                            ->searchable()
-                            ->required()
-                            ->preload(),
-                        TextInput::make('quotation_number')
-                            ->default('QT-' . date('Ymd') . '-' . rand(1000, 9999)),
-                        DatePicker::make('date')
-                            ->default(now())
-                            ->required(),
-                        DatePicker::make('expiry_date'),
-                        Select::make('status')
-                            ->options([
-                                'draft' => 'Draft',
-                                'sent' => 'Sent',
-                                'accepted' => 'Accepted',
-                                'declined' => 'Declined',
-                            ])
-                            ->default('draft')
-                            ->required(),
-                    ])->columns(2),
-
-                Section::make('Items')
-                    ->schema([
-                        Repeater::make('items')
-                            ->relationship()
+                        // 1. Header Section (Customer & Details)
+                        Section::make('Document Details')
+                            ->icon('heroicon-o-document-text')
                             ->schema([
-                                TextInput::make('item_name')
-                                    ->required(),
-                                Textarea::make('description')
-                                    ->rows(2),
-                                Grid::make(4)
+                                Grid::make(4) // Grid 4 kolom agar rapi seperti tampilan "sebelumnya"
                                     ->schema([
-                                        TextInput::make('quantity')
-                                            ->numeric()
-                                            ->default(1)
+                                        Select::make('customer_id')
+                                            ->label('Customer')
+                                            ->relationship('customer', 'company_name')
+                                            ->searchable()
                                             ->required()
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
-                                        TextInput::make('unit_price')
-                                            ->numeric()
-                                            ->default(0)
-                                            ->required()
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
-                                        TextInput::make('discount')
-                                            ->label('Discount %')
-                                            ->numeric()
-                                            ->default(0)
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
-                                        TextInput::make('vat_rate')
-                                            ->label('VAT %')
-                                            ->numeric()
-                                            ->default(0)
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
-                                    ]),
-                                TextInput::make('amount')
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->numeric(),
-                            ])
-                            ->live()
-                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateGrandTotal($set, $get))
-                            ->columnSpanFull(),
-                    ]),
+                                            ->preload()
+                                            ->createOptionForm([
+                                                TextInput::make('company_name')->required(),
+                                                TextInput::make('name')->label('Contact Person'),
+                                                TextInput::make('email')->email(),
+                                            ])
+                                            ->columnSpan(2), // Customer ambil 2 kolom (50%)
 
-                Section::make('Totals')
-                    ->schema([
-                        TextInput::make('subtotal')
-                            ->numeric()
-                            ->readOnly()
-                            ->prefix('IDR'),
-                        TextInput::make('tax_amount')
-                            ->numeric()
-                            ->readOnly()
-                            ->prefix('IDR'),
-                        TextInput::make('discount_amount')
-                            ->numeric()
-                            ->readOnly()
-                            ->prefix('IDR'),
-                        TextInput::make('grand_total')
-                            ->numeric()
-                            ->readOnly()
-                            ->prefix('IDR'),
-                    ])->columns(2),
-                
-                Textarea::make('notes')
-                    ->columnSpanFull(),
+                                        TextInput::make('quotation_number')
+                                            ->label('Quotation #')
+                                            ->default('QT-' . date('Ymd') . '-' . rand(1000, 9999))
+                                            ->required()
+                                            ->columnSpan(1),
+
+                                        Select::make('status')
+                                            ->options([
+                                                'draft' => 'Draft',
+                                                'sent' => 'Sent',
+                                                'accepted' => 'Accepted',
+                                                'declined' => 'Declined',
+                                            ])
+                                            ->default('draft')
+                                            ->required()
+                                            ->native(false)
+                                            ->columnSpan(1),
+
+                                        DatePicker::make('date')
+                                            ->label('Issue Date')
+                                            ->default(now())
+                                            ->required()
+                                            ->columnSpan(1),
+
+                                        DatePicker::make('expiry_date')
+                                            ->label('Valid Until')
+                                            ->minDate(now())
+                                            ->columnSpan(1),
+                                    ]),
+                            ]),
+
+                        // 2. Items Section (Full Width)
+                        Section::make('Line Items')
+                            ->icon('heroicon-o-shopping-cart')
+                            ->schema([
+                                Repeater::make('items')
+                                    ->hiddenLabel()
+                                    ->relationship()
+                                    ->schema([
+                                        Grid::make(12)
+                                            ->schema([
+                                                // Item & Desc (Span 5)
+                                                Group::make()
+                                                    ->columnSpan(5)
+                                                    ->schema([
+                                                        TextInput::make('item_name')
+                                                            ->label('Item')
+                                                            ->required()
+                                                            ->placeholder('Item Name'),
+                                                        TextInput::make('description')
+                                                            ->label('Description')
+                                                            ->placeholder('Description (optional)'),
+                                                    ]),
+
+                                                // Metrics Row (Span 7)
+                                                TextInput::make('quantity')
+                                                    ->label('Qty')
+                                                    ->numeric()
+                                                    ->default(1)
+                                                    ->required()
+                                                    ->columnSpan(1)
+                                                    ->live(onBlur: true)
+                                                    ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+
+                                                TextInput::make('unit_price')
+                                                    ->label('Price')
+                                                    ->numeric()
+                                                    ->default(0)
+                                                    ->required()
+                                                    ->columnSpan(2)
+                                                    ->prefix('Rp')
+                                                    ->live(onBlur: true)
+                                                    ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+
+                                                TextInput::make('discount')
+                                                    ->label('Disc %')
+                                                    ->numeric()
+                                                    ->default(0)
+                                                    ->columnSpan(1)
+                                                    ->live(onBlur: true)
+                                                    ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+
+                                                TextInput::make('vat_rate')
+                                                    ->label('VAT %')
+                                                    ->numeric()
+                                                    ->default(0)
+                                                    ->columnSpan(1)
+                                                    ->live(onBlur: true)
+                                                    ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+
+                                                TextInput::make('amount')
+                                                    ->label('Total')
+                                                    ->disabled()
+                                                    ->dehydrated()
+                                                    ->numeric()
+                                                    ->columnSpan(2)
+                                                    ->prefix('Rp'),
+                                            ]),
+                                    ])
+                                    ->defaultItems(1)
+                                    ->cloneable()
+                                    ->collapsible()
+                                    ->itemLabel(fn (array $state): ?string => $state['item_name'] ?? null)
+                                    ->live()
+                                    ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateGrandTotal($set, $get))
+                                    ->columnSpanFull(),
+                            ]),
+
+                        // 3. Footer Section (Notes & Totals)
+                        Section::make()
+                            ->schema([
+                                Grid::make(3)
+                                    ->schema([
+                                        // Notes (Left 2/3)
+                                        Group::make()
+                                            ->columnSpan(2)
+                                            ->schema([
+                                                Textarea::make('notes')
+                                                    ->label('Notes / Terms')
+                                                    ->rows(4)
+                                                    ->placeholder('Enter payment terms, delivery notes, or other conditions...'),
+                                            ]),
+
+                                        // Totals (Right 1/3)
+                                        Group::make()
+                                            ->columnSpan(1)
+                                            ->schema([
+                                                Section::make('Summary')
+                                                    ->schema([
+                                                        TextInput::make('subtotal')
+                                                            ->label('Subtotal')
+                                                            ->numeric()
+                                                            ->readOnly()
+                                                            ->prefix('Rp'),
+                                                        
+                                                        Grid::make(2)
+                                                            ->schema([
+                                                                TextInput::make('discount_amount')
+                                                                    ->label('Discount')
+                                                                    ->numeric()
+                                                                    ->readOnly()
+                                                                    ->prefix('Rp'),
+                                                                TextInput::make('tax_amount')
+                                                                    ->label('Tax')
+                                                                    ->numeric()
+                                                                    ->readOnly()
+                                                                    ->prefix('Rp'),
+                                                            ]),
+
+                                                        TextInput::make('grand_total')
+                                                            ->label('Grand Total')
+                                                            ->numeric()
+                                                            ->readOnly()
+                                                            ->prefix('Rp')
+                                                            ->extraInputAttributes(['class' => 'text-2xl font-bold text-primary-600']),
+                                                    ]),
+                                            ]),
+                                    ]),
+                            ]),
+                    ]),
             ]);
     }
 

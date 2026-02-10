@@ -21,6 +21,10 @@ class CustomerForm
                             ->required(),
                         TextInput::make('company_name')
                             ->required(),
+                        TextInput::make('initial')
+                            ->label('Initial')
+                            ->placeholder('e.g., ABC')
+                            ->maxLength(10),
                         TextInput::make('email')
                             ->email()
                             ->required(),
