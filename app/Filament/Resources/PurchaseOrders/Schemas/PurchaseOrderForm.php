@@ -122,6 +122,8 @@ class PurchaseOrderForm
                                 Repeater::make('items')
                                     ->hiddenLabel()
                                     ->relationship()
+                                    ->orderColumn('sort_order')
+                                    ->reorderable()
                                     ->schema([
                                         Grid::make(24)
                                             ->schema([
@@ -212,7 +214,7 @@ class PurchaseOrderForm
                                                     ->preserveFilenames()
                                                     ->visibility('private')
                                                     ->live(),
-                                                View::make('filament.components.purchase-order-viewer'),
+                                                View::make('filament.components.document-viewer'),
                                             ]),
 
                                         // Right Column (Totals)

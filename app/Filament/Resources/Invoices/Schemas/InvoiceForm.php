@@ -3,11 +3,14 @@
 namespace App\Filament\Resources\Invoices\Schemas;
 
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -18,8 +21,11 @@ class InvoiceForm
     public static function configure(Schema $schema): Schema
     {
         return $schema
+            ->columns(12)
             ->components([
+                // Header Column (Left - 4/12)
                 Section::make('Header')
+                    ->columnSpan(4)
                     ->schema([
                         Select::make('type')
                             ->options([
@@ -73,75 +79,114 @@ class InvoiceForm
                             ])
                             ->default('unpaid')
                             ->required(),
-                    ])->columns(2),
+                    ])->columns(1),
 
+                // Items Column (Right - 8/12)
                 Section::make('Items')
+                    ->columnSpan(8)
                     ->schema([
                         Repeater::make('items')
                             ->relationship()
+                            ->orderColumn('sort_order')
+                            ->reorderable()
                             ->schema([
-                                TextInput::make('item_name')
-                                    ->required(),
-                                Textarea::make('description')
-                                    ->rows(2),
-                                Grid::make(4)
+                                Grid::make(12)
+                                    ->schema([
+                                        TextInput::make('item_code')
+                                            ->columnSpan(3),
+                                        TextInput::make('item_name')
+                                            ->required()
+                                            ->columnSpan(9),
+                                    ]),
+                                Grid::make(12)
                                     ->schema([
                                         TextInput::make('quantity')
                                             ->numeric()
                                             ->default(1)
                                             ->required()
                                             ->live(onBlur: true)
-                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get))
+                                            ->columnSpan(2),
                                         TextInput::make('unit_price')
                                             ->numeric()
                                             ->default(0)
                                             ->required()
                                             ->live(onBlur: true)
-                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get))
+                                            ->columnSpan(3),
                                         TextInput::make('discount')
                                             ->numeric()
                                             ->default(0)
                                             ->live(onBlur: true)
-                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get))
+                                            ->columnSpan(2),
                                         TextInput::make('vat_rate')
                                             ->label('VAT %')
                                             ->numeric()
                                             ->default(0)
                                             ->live(onBlur: true)
-                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get))
+                                            ->columnSpan(2),
+                                        TextInput::make('amount')
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->numeric()
+                                            ->columnSpan(3),
                                     ]),
-                                TextInput::make('amount')
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->numeric(),
                             ])
                             ->live()
                             ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateGrandTotal($set, $get))
                             ->columnSpanFull(),
                     ]),
 
-                Section::make('Totals')
+                Section::make()
+                    ->columnSpanFull()
                     ->schema([
-                        TextInput::make('subtotal')
-                            ->numeric()
-                            ->readOnly()
-                            ->prefix('IDR'),
-                        TextInput::make('tax_amount')
-                            ->numeric()
-                            ->readOnly()
-                            ->prefix('IDR'),
-                        TextInput::make('discount_amount')
-                            ->numeric()
-                            ->readOnly()
-                            ->prefix('IDR'),
-                        TextInput::make('grand_total')
-                            ->numeric()
-                            ->readOnly()
-                            ->prefix('IDR'),
-                    ])->columns(2),
-                
-                Textarea::make('notes')
-                    ->columnSpanFull(),
+                        Grid::make(3)
+                            ->schema([
+                                // Left Column (Attachments & Notes)
+                                Group::make()
+                                    ->columnSpan(2)
+                                    ->schema([
+                                        FileUpload::make('file_attachment')
+                                            ->label('Attachment')
+                                            ->disk('supabase')
+                                            ->directory('invoices')
+                                            ->preserveFilenames()
+                                            ->visibility('private')
+                                            ->live(),
+                                        View::make('filament.components.document-viewer'),
+                                        Textarea::make('notes')
+                                            ->rows(4),
+                                    ]),
+
+                                // Right Column (Totals)
+                                Group::make()
+                                    ->columnSpan(1)
+                                    ->schema([
+                                        Section::make('Totals')
+                                            ->schema([
+                                                TextInput::make('subtotal')
+                                                    ->numeric()
+                                                    ->readOnly()
+                                                    ->prefix('IDR'),
+                                                TextInput::make('tax_amount')
+                                                    ->numeric()
+                                                    ->readOnly()
+                                                    ->prefix('IDR'),
+                                                TextInput::make('discount_amount')
+                                                    ->numeric()
+                                                    ->readOnly()
+                                                    ->prefix('IDR'),
+                                                TextInput::make('grand_total')
+                                                    ->numeric()
+                                                    ->readOnly()
+                                                    ->prefix('IDR')
+                                                    ->extraInputAttributes(['class' => 'text-2xl font-bold text-primary-600']),
+                                            ])->columns(1),
+                                    ]),
+                            ]),
+                    ]),
             ]);
     }
 

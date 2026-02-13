@@ -69,7 +69,6 @@
             showModal: false,
             toggleModal() {
                 this.showModal = !this.showModal;
-                console.log('Modal toggled:', this.showModal);
             }
         }" 
         class="mt-4"
@@ -108,7 +107,7 @@
                     x-transition:leave-start="opacity-100"
                     x-transition:leave-end="opacity-0"
                     class="fixed inset-0 z-[99999] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4"
-                    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99999; display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.5);"
+                    style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 99999; display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.5);"
                 >
                     <!-- Modal Box -->
                     <div 
@@ -119,24 +118,24 @@
                         x-transition:leave="ease-in duration-200"
                         x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                         x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                        class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col relative ring-1 ring-gray-950/5 dark:ring-white/10"
-                        style="max-width: 80rem; width: 100%; height: 85vh; display: flex; flex-direction: column; position: relative; background-color: rgb(17, 24, 39);"
+                        class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-5xl flex flex-col relative ring-1 ring-gray-950/5 dark:ring-white/10"
+                        style="width: 90%; max-width: 80rem; height: 85vh; max-height: 90vh; display: flex; flex-direction: column; position: relative; margin: auto;"
                     >
                         <!-- Header -->
                         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800"
-                             style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid #374151;">
-                            <h3 class="text-lg font-semibold text-gray-950 dark:text-white" style="color: white; font-size: 1.125rem; font-weight: 600;">
+                             style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                            <h3 class="text-lg font-semibold text-gray-950 dark:text-white" style="font-size: 1.125rem; font-weight: 600;">
                                 Document Preview
                             </h3>
                             <button 
                                 type="button"
                                 @click="showModal = false"
                                 class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors focus:outline-none"
-                                style="color: #9ca3af; background: none; border: none; cursor: pointer;"
+                                style="background: none; border: none; cursor: pointer; padding: 4px;"
                             >
                                 <x-filament::icon
                                     icon="heroicon-o-x-mark"
-                                    class="w-6 h-6"
+                                    class="w-6 h-6 text-gray-500 dark:text-gray-400"
                                 />
                             </button>
                         </div>
@@ -156,7 +155,7 @@
                                      style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: auto;">
                                     <img 
                                         src="{{ $url }}" 
-                                        alt="Purchase Order Attachment" 
+                                        alt="Document Attachment" 
                                         class="max-w-full max-h-full object-contain shadow-lg rounded-lg" 
                                         style="max-width: 100%; max-height: 100%; object-fit: contain;"
                                     />

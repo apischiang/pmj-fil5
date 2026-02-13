@@ -17,6 +17,7 @@ class Invoice extends Model
         'date',
         'due_date',
         'status',
+        'file_attachment',
         'payment_status',
         'notes',
         'subtotal',

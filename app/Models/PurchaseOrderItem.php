@@ -9,6 +9,7 @@ class PurchaseOrderItem extends Model
 {
     protected $fillable = [
         'purchase_order_id',
+        'sort_order',
         'item_sequence',
         'item_name', // For Outgoing
         'material_number', // For Incoming
