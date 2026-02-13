@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('invoices', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->foreignId('customer_id')->nullable()->constrained('customers');
             $table->string('invoice_number')->unique()->nullable();
             $table->date('date')->nullable();
@@ -30,7 +30,7 @@ return new class extends Migration
 
         Schema::create('invoice_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('invoice_id')->constrained('invoices')->onDelete('cascade');
+            $table->foreignUuid('invoice_id')->constrained('invoices')->onDelete('cascade');
             $table->string('item_name')->nullable();
             $table->text('description')->nullable();
             $table->decimal('quantity', 10, 2)->default(1);

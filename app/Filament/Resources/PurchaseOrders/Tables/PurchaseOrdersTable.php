@@ -106,15 +106,27 @@ class PurchaseOrdersTable
                     ->label('Status'),
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->iconButton(),
+                Action::make('convert_to_delivery_order')
+                    ->label('Create Delivery Order')
+                    ->icon('heroicon-o-truck')
+                    ->iconButton()
+                    ->tooltip('Create Delivery Order')
+                    ->color('warning')
+                    ->url(fn (PurchaseOrder $record): string => \App\Filament\Resources\DeliveryOrders\DeliveryOrderResource::getUrl('create', ['purchase_order_id' => $record->id])),
                 Action::make('convert_to_invoice')
                     ->label('Convert to Invoice')
                     ->icon('heroicon-o-document-currency-dollar')
+                    ->iconButton()
+                    ->tooltip('Convert to Invoice')
                     ->color('success')
                     ->requiresConfirmation()
                     ->modalHeading('Convert Purchase Order to Invoice')
                     ->modalDescription('This will create a new Draft Invoice with items from this Purchase Order. You can then edit the invoice to handle partial payments or shipments.')
                     ->action(function (PurchaseOrder $record) {
+                        $record->refresh(); // Refresh to ensure latest data
+                        
                         // Create Invoice Header
                         $invoice = Invoice::create([
                             'type' => $record->type,
@@ -140,9 +152,19 @@ class PurchaseOrdersTable
                         foreach ($record->items as $item) {
                             $itemAmount = $item->quantity * $item->unit_price;
                             
+                            // Determine item name with fallback
+                            $itemName = $item->item_name;
+                            if (empty($itemName)) {
+                                $itemName = $item->description;
+                            }
+                            if (empty($itemName)) {
+                                $itemName = $item->material_number;
+                            }
+                            
                             $invoice->items()->create([
-                                'item_name' => $record->type === 'in' ? $item->material_number : $item->item_name,
-                                'description' => $item->description,
+                                'item_code' => $record->type === 'in' ? $item->material_number : null,
+                                'item_name' => $itemName,
+                                'description' => null,
                                 'quantity' => $item->quantity,
                                 'unit_price' => $item->unit_price,
                                 'discount' => 0,

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\PurchaseOrders\Schemas;
 
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -124,6 +125,7 @@ class PurchaseOrderForm
                                     ->relationship()
                                     ->orderColumn('sort_order')
                                     ->reorderable()
+                                    ->itemLabel(fn (array $state): ?string => $state['item_name'] ?? null)
                                     ->schema([
                                         Grid::make(24)
                                             ->schema([
@@ -131,19 +133,38 @@ class PurchaseOrderForm
                                                 Group::make()
                                                     ->columnSpan(16)
                                                     ->schema([
-                                                        TextInput::make('item_sequence')
-                                                            ->label('Item No.')
-                                                            ->default('00010')
-                                                            ->visible(fn (Get $get) => $get('../../type') === 'in'),
+                                                        Placeholder::make('item_index')
+                                                            ->hiddenLabel()
+                                                            ->content(function ($component) {
+                                                                $path = $component->getStatePath();
+                                                                $parts = explode('.', $path);
+                                                                // Path structure: ...items.UUID.item_index
+                                                                // We need the UUID (2nd to last part)
+                                                                if (count($parts) < 2) return '';
+                                                                $uuid = $parts[count($parts) - 2];
+                                                                
+                                                                // Find the Repeater component by traversing up
+                                                                $parent = $component->getContainer()->getParentComponent();
+                                                                while ($parent && ! $parent instanceof \Filament\Forms\Components\Repeater) {
+                                                                    $parent = $parent->getContainer()->getParentComponent();
+                                                                }
+                                                                
+                                                                if (! $parent) return '';
+                                                                
+                                                                $state = $parent->getState();
+                                                                if (! is_array($state)) return 'Item 1'; // Fallback for initial state
+                                                                
+                                                                $index = array_search($uuid, array_keys($state));
+                                                                
+                                                                return 'Item ' . ($index !== false ? $index + 1 : count($state) + 1);
+                                                            })
+                                                            ->extraAttributes(['class' => 'font-bold text-lg mb-2 text-primary-600']),
                                                         TextInput::make('material_number')
                                                             ->label('Material')
                                                             ->visible(fn (Get $get) => $get('../../type') === 'in'),
-                                                        TextInput::make('item_name')
+                                                        Textarea::make('item_name')
                                                             ->label('Item Name')
                                                             ->required()
-                                                            ->visible(fn (Get $get) => $get('../../type') === 'out'),
-                                                        Textarea::make('description')
-                                                            ->label('Description')
                                                             ->rows(2),
                                                     ]),
 
