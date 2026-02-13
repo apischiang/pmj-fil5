@@ -8,6 +8,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
@@ -25,6 +26,7 @@ class PurchaseOrderForm
                 Group::make()
                     ->columnSpanFull()
                     ->schema([
+                        // View::make('filament.components.purchase-order-scanner'),
                         // 1. Header Section
                         Section::make('Document Details')
                             ->icon('heroicon-o-document-text')
@@ -205,8 +207,12 @@ class PurchaseOrderForm
                                             ->schema([
                                                 FileUpload::make('file_attachment')
                                                     ->label('Attachment')
+                                                    ->disk('supabase')
                                                     ->directory('purchase-orders')
-                                                    ->visibility('private'),
+                                                    ->preserveFilenames()
+                                                    ->visibility('private')
+                                                    ->live(),
+                                                View::make('filament.components.purchase-order-viewer'),
                                             ]),
 
                                         // Right Column (Totals)
