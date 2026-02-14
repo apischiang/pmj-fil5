@@ -108,17 +108,19 @@ class InvoiceForm
                                             ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get))
                                             ->columnSpan(2),
                                         TextInput::make('unit_price')
-                                            ->numeric()
+                                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                             ->default(0)
                                             ->required()
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get))
+                                            ->prefix('Rp')
                                             ->columnSpan(3),
                                         TextInput::make('discount')
-                                            ->numeric()
+                                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                             ->default(0)
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get))
+                                            ->prefix('Rp')
                                             ->columnSpan(2),
                                         TextInput::make('vat_rate')
                                             ->label('VAT %')
@@ -130,7 +132,8 @@ class InvoiceForm
                                         TextInput::make('amount')
                                             ->disabled()
                                             ->dehydrated()
-                                            ->numeric()
+                                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
+                                            ->prefix('Rp')
                                             ->columnSpan(3),
                                     ]),
                             ])
@@ -167,21 +170,21 @@ class InvoiceForm
                                         Section::make('Totals')
                                             ->schema([
                                                 TextInput::make('subtotal')
-                                                    ->numeric()
+                                                    ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                                     ->readOnly()
-                                                    ->prefix('IDR'),
+                                                    ->prefix('Rp'),
                                                 TextInput::make('tax_amount')
-                                                    ->numeric()
+                                                    ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                                     ->readOnly()
-                                                    ->prefix('IDR'),
+                                                    ->prefix('Rp'),
                                                 TextInput::make('discount_amount')
-                                                    ->numeric()
+                                                    ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                                     ->readOnly()
-                                                    ->prefix('IDR'),
+                                                    ->prefix('Rp'),
                                                 TextInput::make('grand_total')
-                                                    ->numeric()
+                                                    ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                                     ->readOnly()
-                                                    ->prefix('IDR')
+                                                    ->prefix('Rp')
                                                     ->extraInputAttributes(['class' => 'text-2xl font-bold text-primary-600']),
                                             ])->columns(1),
                                     ]),

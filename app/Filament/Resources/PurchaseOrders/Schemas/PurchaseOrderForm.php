@@ -194,7 +194,7 @@ class PurchaseOrderForm
 
                                                 TextInput::make('unit_price')
                                                     ->label('Price')
-                                                    ->numeric()
+                                                    ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                                     ->default(0)
                                                     ->required()
                                                     ->columnSpan(2)
@@ -206,7 +206,7 @@ class PurchaseOrderForm
                                                     ->label('Total')
                                                     ->disabled()
                                                     ->dehydrated()
-                                                    ->numeric()
+                                                    ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                                     ->columnSpan(2)
                                                     ->prefix('Rp'),
                                                     ]),
@@ -253,13 +253,13 @@ class PurchaseOrderForm
                                                         
                                                         TextInput::make('tax_amount')
                                                             ->label('Tax Amount')
-                                                            ->numeric()
+                                                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                                             ->readOnly()
                                                             ->prefix('Rp'),
                                                             
                                                         TextInput::make('grand_total')
                                                             ->label('Grand Total')
-                                                            ->numeric()
+                                                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                                             ->readOnly()
                                                             ->prefix('Rp')
                                                             ->extraInputAttributes(['class' => 'text-2xl font-bold text-primary-600']),
