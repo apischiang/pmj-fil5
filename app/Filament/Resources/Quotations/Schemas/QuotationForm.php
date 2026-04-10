@@ -165,7 +165,7 @@ class QuotationForm
                                                         TextInput::make('unit_price')
                                                             ->label('Price')
                                                             ->numeric()
-                                                            ->default(0)
+                                                            ->default(null)
                                                             ->required()
                                                             ->columnSpan(2)
                                                             ->prefix('Rp')
