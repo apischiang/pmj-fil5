@@ -2,20 +2,20 @@
 
 namespace App\Filament\Resources\Quotations\Schemas;
 
+use App\Models\Customer;
+use App\Models\Quotation;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Actions\Action;
-use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
-
-use Filament\Forms\Components\FileUpload;
 
 class QuotationForm
 {
@@ -37,25 +37,32 @@ class QuotationForm
                                         Select::make('customer_id')
                                             ->label('Customer')
                                             ->relationship('customer', 'company_name')
-                                            ->searchable()
+                                            ->getOptionLabelFromRecordUsing(
+                                                fn (Customer $record): string => self::formatCustomerOptionLabel($record)
+                                            )
+                                            ->searchable(['name', 'company_name'])
                                             ->required()
                                             ->preload()
                                             ->live()
                                             ->afterStateUpdated(function (Set $set, $state) {
-                                                if (! $state) return;
-                                                $customer = \App\Models\Customer::find($state);
-                                                if (! $customer) return;
-                                                 
-                                                 $initial = strtoupper($customer->initial ?? 'XX');
-                                                 $year = date('y');
-                                                 $month = date('m');
+                                                if (! $state) {
+                                                    return;
+                                                }
+                                                $customer = Customer::find($state);
+                                                if (! $customer) {
+                                                    return;
+                                                }
+
+                                                $initial = strtoupper($customer->initial ?? 'XX');
+                                                $year = date('y');
+                                                $month = date('m');
                                                 $prefix = "PMJ/{$initial}/{$year}/{$month}/";
-                                                
+
                                                 // Find last number for this prefix pattern to increment
-                                                $lastQuotation = \App\Models\Quotation::where('quotation_number', 'like', $prefix . '%')
+                                                $lastQuotation = Quotation::where('quotation_number', 'like', $prefix.'%')
                                                     ->orderBy('quotation_number', 'desc')
                                                     ->first();
-                                                
+
                                                 if ($lastQuotation) {
                                                     // Extract the last 3 digits
                                                     $lastSequence = intval(substr($lastQuotation->quotation_number, -3));
@@ -63,8 +70,8 @@ class QuotationForm
                                                 } else {
                                                     $newSequence = '001';
                                                 }
-                                                
-                                                $set('quotation_number', $prefix . $newSequence);
+
+                                                $set('quotation_number', $prefix.$newSequence);
                                             })
                                             ->createOptionForm([
                                                 TextInput::make('company_name')->required(),
@@ -128,7 +135,7 @@ class QuotationForm
                                                             ->label('Description')
                                                             ->placeholder('Description (optional)'),
 
-                                                            // Image (Span 1)
+                                                        // Image (Span 1)
                                                         FileUpload::make('image')
                                                             ->label('Attachment')
                                                             ->directory('quotation-items')
@@ -139,62 +146,59 @@ class QuotationForm
                                                 Group::make()
                                                     ->columnSpan(8)
                                                     ->schema([
-                                                TextInput::make('quantity')
-                                                    ->label('Qty')
-                                                    ->numeric()
-                                                    ->default(1)
-                                                    ->required()
-                                                    ->columnSpan(1)
-                                                    ->live(onBlur: true)
-                                                    ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+                                                        TextInput::make('quantity')
+                                                            ->label('Qty')
+                                                            ->numeric()
+                                                            ->default(1)
+                                                            ->required()
+                                                            ->columnSpan(1)
+                                                            ->live(onBlur: true)
+                                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
 
-                                                TextInput::make('uom')
-                                                    ->label('UoM')
-                                                    ->placeholder('Unit')
-                                                    ->columnSpan(1),
+                                                        TextInput::make('uom')
+                                                            ->label('UoM')
+                                                            ->placeholder('Unit')
+                                                            ->columnSpan(1),
 
-                                                TextInput::make('unit_price')
-                                                    ->label('Price')
-                                                    ->numeric()
-                                                    ->default(0)
-                                                    ->required()
-                                                    ->columnSpan(2)
-                                                    ->prefix('Rp')
-                                                    ->live(onBlur: true)
-                                                    ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+                                                        TextInput::make('unit_price')
+                                                            ->label('Price')
+                                                            ->numeric()
+                                                            ->default(0)
+                                                            ->required()
+                                                            ->columnSpan(2)
+                                                            ->prefix('Rp')
+                                                            ->live(onBlur: true)
+                                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
 
-                                                    
-                                                    
-                                                TextInput::make('discount')
-                                                    ->label('Disc %')
-                                                    ->numeric()
-                                                    ->default(0)
-                                                    ->columnSpan(1)
-                                                    ->live(onBlur: true)
-                                                    ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+                                                        TextInput::make('discount')
+                                                            ->label('Disc %')
+                                                            ->numeric()
+                                                            ->default(0)
+                                                            ->columnSpan(1)
+                                                            ->live(onBlur: true)
+                                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
 
-                                                TextInput::make('vat_rate')
-                                                    ->label('VAT %')
-                                                    ->numeric()
-                                                    ->default(0)
-                                                    ->columnSpan(1)
-                                                    ->live(onBlur: true)
-                                                    ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+                                                        TextInput::make('vat_rate')
+                                                            ->label('VAT %')
+                                                            ->numeric()
+                                                            ->default(0)
+                                                            ->columnSpan(1)
+                                                            ->live(onBlur: true)
+                                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
 
-                                                TextInput::make('amount')
-                                                    ->label('Total')
-                                                    ->disabled()
-                                                    ->dehydrated()
-                                                    ->numeric()
-                                                    ->columnSpan(2)
-                                                    ->prefix('Rp'),
+                                                        TextInput::make('amount')
+                                                            ->label('Total')
+                                                            ->disabled()
+                                                            ->dehydrated()
+                                                            ->numeric()
+                                                            ->columnSpan(2)
+                                                            ->prefix('Rp'),
                                                     ]),
                                             ]),
                                     ])
                                     ->defaultItems(1)
                                     ->cloneable()
                                     ->collapsible()
-                                    ->itemLabel(fn (array $state): ?string => $state['item_name'] ?? null)
                                     ->live()
                                     ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateGrandTotal($set, $get))
                                     ->columnSpanFull(),
@@ -226,7 +230,7 @@ class QuotationForm
                                                             ->numeric()
                                                             ->readOnly()
                                                             ->prefix('Rp'),
-                                                        
+
                                                         Grid::make(2)
                                                             ->schema([
                                                                 TextInput::make('discount_amount')
@@ -287,21 +291,28 @@ class QuotationForm
 
                 $lineSubtotal = ($qty * $price);
                 $lineDiscountAmount = $lineSubtotal * ($discount / 100);
-                
+
                 $taxable = $lineSubtotal - $lineDiscountAmount;
                 $tax = $taxable * ($vatRate / 100);
-                
+
                 $subtotal += $lineSubtotal;
                 $totalDiscount += $lineDiscountAmount;
                 $totalTax += $tax;
             }
         }
-        
+
         $grandTotal = $subtotal - $totalDiscount + $totalTax;
 
         $set('subtotal', number_format($subtotal, 2, '.', ''));
         $set('tax_amount', number_format($totalTax, 2, '.', ''));
         $set('discount_amount', number_format($totalDiscount, 2, '.', ''));
         $set('grand_total', number_format($grandTotal, 2, '.', ''));
+    }
+
+    public static function formatCustomerOptionLabel(Customer $customer): string
+    {
+        return collect([$customer->name, $customer->company_name])
+            ->filter()
+            ->implode(' - ');
     }
 }

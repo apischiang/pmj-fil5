@@ -5,8 +5,8 @@ namespace App\Filament\Resources\Vendors;
 use App\Filament\Resources\Vendors\Pages\CreateVendor;
 use App\Filament\Resources\Vendors\Pages\EditVendor;
 use App\Filament\Resources\Vendors\Pages\ListVendors;
-use App\Filament\Resources\Vendors\RelationManagers\PurchaseOrdersRelationManager;
 use App\Filament\Resources\Vendors\RelationManagers\InvoiceOutsRelationManager;
+use App\Filament\Resources\Vendors\RelationManagers\PurchaseOrdersRelationManager;
 use App\Filament\Resources\Vendors\Schemas\VendorForm;
 use App\Filament\Resources\Vendors\Tables\VendorsTable;
 use App\Models\Vendor;
@@ -26,6 +26,16 @@ class VendorResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = 'Procurement';
 
     protected static ?int $navigationSort = 1;
+
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return static::getModel()::count() > 0 ? 'primary' : 'gray';
+    }
 
     public static function form(Schema $schema): Schema
     {

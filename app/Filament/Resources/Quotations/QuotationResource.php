@@ -25,6 +25,16 @@ class QuotationResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getModel()::where('status', 'draft')->count();
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return static::getModel()::where('status', 'draft')->count() > 0 ? 'warning' : 'success';
+    }
+
     public static function form(Schema $schema): Schema
     {
         return QuotationForm::configure($schema);

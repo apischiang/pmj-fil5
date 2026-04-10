@@ -21,25 +21,25 @@ class DatabaseSeeder extends Seeder
 
         // 2. Create or retrieve the Super Admin User
         $user = User::firstOrCreate(
-            ['email' => 'admin@admin.com'],
+            ['email' => '123@123.com'],
             [
-                'name' => 'Super Admin',
-                'password' => bcrypt('password'), // Change this in production
+                'name' => 'apis',
+                'password' => bcrypt('123'), // Change this in production
                 'email_verified_at' => now(),
             ]
         );
 
         // 3. Assign the super_admin role
         $superAdminRoleName = config('filament-shield.super_admin.name', 'super_admin');
-        
+
         // The role should have been created by ShieldSeeder, but we can ensure it exists
         $role = Role::firstOrCreate(['name' => $superAdminRoleName, 'guard_name' => 'web']);
-        
+
         $user->assignRole($role);
 
         // Optional: Keep the test user if needed
         $testUser = User::firstOrCreate(
-            ['email' => 'test@example.com'],
+            ['email' => 'test@123.com'],
             [
                 'name' => 'Test User',
                 'password' => bcrypt('password'),
