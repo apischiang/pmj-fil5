@@ -3,13 +3,13 @@
 namespace App\Filament\Resources\Quotations\Tables;
 
 use App\Models\Quotation;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Blade;
 
 class QuotationsTable
@@ -37,7 +37,7 @@ class QuotationsTable
                         default => 'gray',
                     }),
                 TextColumn::make('grand_total')
-                    ->money('IDR')
+                    ->money('IDR', decimalPlaces: 0)
                     ->sortable(),
                 TextColumn::make('creator.name')
                     ->label('Created By'),
@@ -55,7 +55,7 @@ class QuotationsTable
                             echo Pdf::loadHtml(
                                 Blade::render('pdf.quotation', ['record' => $record])
                             )->stream();
-                        }, 'quotation-' . $record->quotation_number . '.pdf');
+                        }, 'quotation-'.$record->quotation_number.'.pdf');
                     }),
             ])
             ->toolbarActions([
