@@ -6,10 +6,12 @@ use App\Models\Customer;
 use App\Models\Quotation;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
@@ -178,13 +180,8 @@ class QuotationForm
                                                             ->live(onBlur: true)
                                                             ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
 
-                                                        TextInput::make('vat_rate')
-                                                            ->label('VAT %')
-                                                            ->numeric()
-                                                            ->default(0)
-                                                            ->columnSpan(1)
-                                                            ->live(onBlur: true)
-                                                            ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotal($set, $get)),
+                                                        Hidden::make('vat_rate')
+                                                            ->default(fn (Get $get): float => $get('../../has_vat') ? 11 : 0),
 
                                                         TextInput::make('amount')
                                                             ->label('Total')
@@ -225,6 +222,26 @@ class QuotationForm
                                             ->schema([
                                                 Section::make('Summary')
                                                     ->schema([
+                                                        Toggle::make('has_vat')
+                                                            ->label('Apply VAT 11%')
+                                                            ->dehydrated(false)
+                                                            ->inline(false)
+                                                            ->live()
+                                                            ->default(false)
+                                                            ->afterStateHydrated(function (Set $set, Get $get, $state): void {
+                                                                if ($state !== null) {
+                                                                    return;
+                                                                }
+
+                                                                $hasVat = collect($get('items') ?? [])
+                                                                    ->contains(fn (array $item): bool => (float) ($item['vat_rate'] ?? 0) > 0);
+
+                                                                $set('has_vat', $hasVat);
+                                                            })
+                                                            ->afterStateUpdated(
+                                                                fn (Set $set, Get $get, bool $state) => self::syncVatRateForItems($set, $get, $state)
+                                                            ),
+
                                                         TextInput::make('subtotal')
                                                             ->label('Subtotal')
                                                             ->numeric()
@@ -276,11 +293,51 @@ class QuotationForm
 
     public static function calculateGrandTotal(Set $set, Get $get): void
     {
+        self::updateQuotationTotals($set, $get('items'));
+    }
+
+    public static function syncVatRateForItems(Set $set, Get $get, bool $hasVat): void
+    {
+        $vatRate = $hasVat ? 11.0 : 0.0;
         $items = $get('items');
+
+        if (! is_array($items)) {
+            self::updateQuotationTotals($set, []);
+
+            return;
+        }
+
+        $updatedItems = [];
+
+        foreach ($items as $itemKey => $item) {
+            $quantity = (float) ($item['quantity'] ?? 0);
+            $unitPrice = (float) ($item['unit_price'] ?? 0);
+            $discount = (float) ($item['discount'] ?? 0);
+
+            $lineSubtotal = $quantity * $unitPrice;
+            $discountAmount = $lineSubtotal * ($discount / 100);
+            $taxable = $lineSubtotal - $discountAmount;
+            $amount = $taxable * (1 + ($vatRate / 100));
+
+            $item['vat_rate'] = $vatRate;
+            $item['amount'] = number_format($amount, 2, '.', '');
+
+            $updatedItems[$itemKey] = $item;
+        }
+
+        $set('items', $updatedItems);
+
+        self::updateQuotationTotals($set, $updatedItems);
+    }
+
+    /**
+     * @param  array<int|string, array<string, mixed>>|null  $items
+     */
+    public static function updateQuotationTotals(Set $set, ?array $items): void
+    {
         $subtotal = 0;
         $totalTax = 0;
         $totalDiscount = 0;
-        $grandTotal = 0;
 
         if ($items) {
             foreach ($items as $item) {
