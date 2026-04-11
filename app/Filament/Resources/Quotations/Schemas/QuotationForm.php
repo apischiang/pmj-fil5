@@ -281,12 +281,10 @@ class QuotationForm
         $qty = (float) $get('quantity');
         $price = (float) $get('unit_price');
         $discount = (float) $get('discount');
-        $vatRate = (float) $get('vat_rate');
 
         $lineSubtotal = $qty * $price;
         $discountAmount = $lineSubtotal * ($discount / 100);
-        $taxable = $lineSubtotal - $discountAmount;
-        $amount = $taxable * (1 + ($vatRate / 100));
+        $amount = $lineSubtotal - $discountAmount;
 
         $set('amount', number_format($amount, 2, '.', ''));
     }
@@ -316,8 +314,7 @@ class QuotationForm
 
             $lineSubtotal = $quantity * $unitPrice;
             $discountAmount = $lineSubtotal * ($discount / 100);
-            $taxable = $lineSubtotal - $discountAmount;
-            $amount = $taxable * (1 + ($vatRate / 100));
+            $amount = $lineSubtotal - $discountAmount;
 
             $item['vat_rate'] = $vatRate;
             $item['amount'] = number_format($amount, 2, '.', '');
