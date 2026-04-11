@@ -17,33 +17,12 @@ class QuotationPdfGenerator
 {
     public function download(Quotation $quotation): PdfBuilder
     {
-        $quotation->loadMissing(['creator', 'customer', 'items']);
+        return $this->buildPdf($quotation)->download($this->resolveFilename($quotation));
+    }
 
-        $items = $quotation->items
-            ->sortBy('item_sequence')
-            ->values();
-
-        $filename = Str::of($quotation->quotation_number ?: 'quotation')
-            ->replace(['/', '\\'], '-')
-            ->append('.pdf')
-            ->toString();
-
-        return Pdf::view('pdf.quotation', [
-            'record' => $quotation,
-            'visibleItems' => $items,
-            'imageFigures' => $this->buildImageFigures($items),
-            'watermarkDataUri' => $this->resolvePublicImageDataUri('images/quotation-watermark.png'),
-        ])
-            ->format(Format::A4)
-            ->margins()
-            ->withBrowsershot(function (Browsershot $browsershot): void {
-                if ($chromePath = $this->resolveChromePath()) {
-                    $browsershot->setChromePath($chromePath);
-                }
-
-                $browsershot->newHeadless();
-            })
-            ->download($filename);
+    public function save(Quotation $quotation, string $path): void
+    {
+        $this->buildPdf($quotation)->save($path);
     }
 
     /**
@@ -159,5 +138,38 @@ class QuotationPdfGenerator
         }
 
         return null;
+    }
+
+    protected function buildPdf(Quotation $quotation): PdfBuilder
+    {
+        $quotation->loadMissing(['creator', 'customer', 'items']);
+
+        $items = $quotation->items
+            ->sortBy('item_sequence')
+            ->values();
+
+        return Pdf::view('pdf.quotation', [
+            'record' => $quotation,
+            'visibleItems' => $items,
+            'imageFigures' => $this->buildImageFigures($items),
+            'watermarkDataUri' => $this->resolvePublicImageDataUri('images/quotation-watermark.png'),
+        ])
+            ->format(Format::A4)
+            ->margins()
+            ->withBrowsershot(function (Browsershot $browsershot): void {
+                if ($chromePath = $this->resolveChromePath()) {
+                    $browsershot->setChromePath($chromePath);
+                }
+
+                $browsershot->newHeadless();
+            });
+    }
+
+    protected function resolveFilename(Quotation $quotation): string
+    {
+        return Str::of($quotation->quotation_number ?: 'quotation')
+            ->replace(['/', '\\'], '-')
+            ->append('.pdf')
+            ->toString();
     }
 }

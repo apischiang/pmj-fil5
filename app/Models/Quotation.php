@@ -20,13 +20,25 @@ class Quotation extends Model
         'tax_amount',
         'discount_amount',
         'grand_total',
+        'pdf_status',
+        'pdf_path',
+        'pdf_requested_at',
+        'pdf_generated_at',
+        'pdf_failed_at',
+        'pdf_error',
         'created_by',
     ];
 
-    protected $casts = [
-        'date' => 'date',
-        'expiry_date' => 'date',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'date' => 'date',
+            'expiry_date' => 'date',
+            'pdf_requested_at' => 'datetime',
+            'pdf_generated_at' => 'datetime',
+            'pdf_failed_at' => 'datetime',
+        ];
+    }
 
     protected static function booted()
     {
