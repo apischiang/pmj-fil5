@@ -202,6 +202,7 @@ class QuotationForm
 
                                                         TextInput::make('unit_price')
                                                             ->label('Price')
+                                                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 0)
                                                             ->numeric()
                                                             ->default(null)
                                                             ->required()
@@ -225,6 +226,7 @@ class QuotationForm
                                                             ->label('Total')
                                                             ->disabled()
                                                             ->dehydrated()
+                                                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 0)
                                                             ->numeric()
                                                             ->columnSpan(2)
                                                             ->prefix('Rp'),
@@ -282,6 +284,7 @@ class QuotationForm
 
                                                         TextInput::make('subtotal')
                                                             ->label('Subtotal')
+                                                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 0)
                                                             ->numeric()
                                                             ->readOnly()
                                                             ->prefix('Rp'),
@@ -290,11 +293,13 @@ class QuotationForm
                                                             ->schema([
                                                                 TextInput::make('discount_amount')
                                                                     ->label('Discount')
+                                                                    ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 0)
                                                                     ->numeric()
                                                                     ->readOnly()
                                                                     ->prefix('Rp'),
                                                                 TextInput::make('tax_amount')
                                                                     ->label('Tax')
+                                                                    ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 0)
                                                                     ->numeric()
                                                                     ->readOnly()
                                                                     ->prefix('Rp'),
@@ -302,6 +307,7 @@ class QuotationForm
 
                                                         TextInput::make('grand_total')
                                                             ->label('Grand Total')
+                                                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 0)
                                                             ->numeric()
                                                             ->readOnly()
                                                             ->prefix('Rp')
@@ -324,7 +330,7 @@ class QuotationForm
         $discountAmount = $lineSubtotal * ($discount / 100);
         $amount = $lineSubtotal - $discountAmount;
 
-        $set('amount', number_format($amount, 2, '.', ''));
+        $set('amount', number_format($amount, 0, '.', ''));
     }
 
     public static function calculateGrandTotal(Set $set, Get $get): void
@@ -355,7 +361,7 @@ class QuotationForm
             $amount = $lineSubtotal - $discountAmount;
 
             $item['vat_rate'] = $vatRate;
-            $item['amount'] = number_format($amount, 2, '.', '');
+            $item['amount'] = number_format($amount, 0, '.', '');
 
             $updatedItems[$itemKey] = $item;
         }
@@ -395,10 +401,10 @@ class QuotationForm
 
         $grandTotal = $subtotal - $totalDiscount + $totalTax;
 
-        $set('subtotal', number_format($subtotal, 2, '.', ''));
-        $set('tax_amount', number_format($totalTax, 2, '.', ''));
-        $set('discount_amount', number_format($totalDiscount, 2, '.', ''));
-        $set('grand_total', number_format($grandTotal, 2, '.', ''));
+        $set('subtotal', number_format($subtotal, 0, '.', ''));
+        $set('tax_amount', number_format($totalTax, 0, '.', ''));
+        $set('discount_amount', number_format($totalDiscount, 0, '.', ''));
+        $set('grand_total', number_format($grandTotal, 0, '.', ''));
     }
 
     public static function formatCustomerOptionLabel(Customer $customer): string
