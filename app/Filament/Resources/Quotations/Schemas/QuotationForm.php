@@ -169,9 +169,11 @@ class QuotationForm
                                                             ->label('Item')
                                                             ->required()
                                                             ->placeholder('Item Name'),
-                                                        TextInput::make('description')
+                                                        Textarea::make('description')
                                                             ->label('Description')
-                                                            ->placeholder('Description (optional)'),
+                                                            ->placeholder('Description (optional)')
+                                                            ->rows(4)
+                                                            ->autosize(),
 
                                                         // Image (Span 1)
                                                         FileUpload::make('image')
