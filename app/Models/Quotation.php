@@ -28,6 +28,7 @@ class Quotation extends Model
         'pdf_failed_at',
         'pdf_error',
         'created_by',
+        'salesperson_id',
     ];
 
     protected function casts(): array
@@ -50,7 +51,25 @@ class Quotation extends Model
 
             if (Auth::check()) {
                 $quotation->created_by = Auth::id();
+
+                if (blank($quotation->salesperson_id)) {
+                    $quotation->salesperson_id = Auth::id();
+                }
             }
+        });
+
+        static::updating(function ($quotation) {
+            if (! Auth::check()) {
+                return;
+            }
+
+            if (filled($quotation->getOriginal('salesperson_id'))) {
+                $quotation->salesperson_id = $quotation->getOriginal('salesperson_id');
+
+                return;
+            }
+
+            $quotation->salesperson_id = Auth::id();
         });
     }
 
@@ -72,5 +91,10 @@ class Quotation extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function salesperson(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'salesperson_id');
     }
 }

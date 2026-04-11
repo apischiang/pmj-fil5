@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Resources\Quotations\Pages\CreateQuotation;
+use App\Filament\Resources\Quotations\Pages\EditQuotation;
 use App\Models\Customer;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
@@ -65,6 +66,7 @@ test('quotation line item total excludes vat while summary still includes it', f
     expect((float) $quotation->discount_amount)->toBe(20000.0);
     expect((float) $quotation->tax_amount)->toBe(19800.0);
     expect((float) $quotation->grand_total)->toBe(199800.0);
+    expect($quotation->salesperson_id)->toBe($user->getKey());
 
     $quotationItem = $quotation->items->sole();
 
@@ -72,4 +74,43 @@ test('quotation line item total excludes vat while summary still includes it', f
     expect((float) $quotationItem->vat_rate)->toBe(11.0);
 
     expect(QuotationItem::query()->count())->toBe(1);
+});
+
+test('salesperson cannot be changed from quotation edit form', function () {
+    $user = User::factory()->create();
+    $originalSalesperson = User::factory()->create();
+    $newSalesperson = User::factory()->create();
+    $customer = Customer::create([
+        'name' => 'Buyer Edit',
+        'company_name' => 'PT Edit Customer',
+        'initial' => 'EC',
+        'email' => 'buyer-edit@example.com',
+    ]);
+    Permission::findOrCreate('ViewAny:Quotation', 'web');
+    Permission::findOrCreate('View:Quotation', 'web');
+    Permission::findOrCreate('Update:Quotation', 'web');
+    $user->givePermissionTo([
+        'ViewAny:Quotation',
+        'View:Quotation',
+        'Update:Quotation',
+    ]);
+
+    $this->actingAs($user);
+
+    $quotation = Quotation::create([
+        'customer_id' => $customer->getKey(),
+        'quotation_number' => 'PMJ/CC/26/04/002',
+        'status' => 'draft',
+        'date' => now()->toDateString(),
+        'salesperson_id' => $originalSalesperson->getKey(),
+    ]);
+
+    Livewire::test(EditQuotation::class, ['record' => $quotation->getRouteKey()])
+        ->fillForm([
+            'salesperson_id' => $newSalesperson->getKey(),
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($quotation->fresh()->salesperson_id)->toBe($originalSalesperson->getKey());
 });

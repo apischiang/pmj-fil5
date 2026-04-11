@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Quotations\Schemas;
 
 use App\Models\Customer;
 use App\Models\Quotation;
+use App\Models\User;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
@@ -112,6 +113,41 @@ class QuotationForm
                                             ->label('Valid Until')
                                             ->minDate(now())
                                             ->columnSpan(1),
+
+                                        Hidden::make('salesperson_id')
+                                            ->required()
+                                            ->default(fn (): ?int => auth()->id())
+                                            ->afterStateHydrated(function (Set $set, $state): void {
+                                                if (filled($state) || ! auth()->check()) {
+                                                    return;
+                                                }
+
+                                                $set('salesperson_id', auth()->id());
+                                            })
+                                            ->dehydrated(),
+
+                                        TextInput::make('salesperson_display')
+                                            ->label('Salesperson')
+                                            ->disabled()
+                                            ->dehydrated(false)
+                                            ->formatStateUsing(function ($state, $record, Get $get): string {
+                                                if (filled($state)) {
+                                                    return (string) $state;
+                                                }
+
+                                                if ($record?->salesperson) {
+                                                    return (string) $record->salesperson->name;
+                                                }
+
+                                                $salespersonId = $get('salesperson_id');
+
+                                                if ($salespersonId) {
+                                                    return (string) (User::find($salespersonId)?->name ?? '-');
+                                                }
+
+                                                return (string) (auth()->user()?->name ?? '-');
+                                            })
+                                            ->columnSpan(2),
                                     ]),
                             ]),
 
