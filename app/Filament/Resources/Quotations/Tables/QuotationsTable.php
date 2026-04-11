@@ -3,14 +3,13 @@
 namespace App\Filament\Resources\Quotations\Tables;
 
 use App\Models\Quotation;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\URL;
 
 class QuotationsTable
 {
@@ -50,13 +49,12 @@ class QuotationsTable
                 Action::make('pdf')
                     ->label('PDF')
                     ->icon('heroicon-o-document-arrow-down')
-                    ->action(function (Quotation $record) {
-                        return response()->streamDownload(function () use ($record) {
-                            echo Pdf::loadHtml(
-                                Blade::render('pdf.quotation', ['record' => $record])
-                            )->stream();
-                        }, 'quotation-'.$record->quotation_number.'.pdf');
-                    }),
+                    ->url(fn (Quotation $record): string => URL::temporarySignedRoute(
+                        'quotations.pdf.download',
+                        now()->addMinutes(5),
+                        ['quotation' => $record],
+                    ))
+                    ->openUrlInNewTab(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
