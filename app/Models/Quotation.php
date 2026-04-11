@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class Quotation extends Model
 {
@@ -43,10 +44,19 @@ class Quotation extends Model
     protected static function booted()
     {
         static::creating(function ($quotation) {
+            if (blank($quotation->public_id)) {
+                $quotation->public_id = (string) Str::ulid();
+            }
+
             if (Auth::check()) {
                 $quotation->created_by = Auth::id();
             }
         });
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'public_id';
     }
 
     public function customer(): BelongsTo

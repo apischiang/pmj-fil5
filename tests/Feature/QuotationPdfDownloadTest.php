@@ -26,9 +26,13 @@ test('authorized user can download a quotation pdf from signed route', function 
 
     Storage::disk('local')->put($quotation->pdf_path, 'pdf-content');
 
-    $response = $this->get(
-        URL::temporarySignedRoute('quotations.pdf.download', now()->addMinutes(5), ['quotation' => $quotation])
-    );
+    $url = URL::temporarySignedRoute('quotations.pdf.download', now()->addMinutes(5), ['quotation' => $quotation]);
+
+    expect($quotation->public_id)->not->toBeEmpty();
+    expect($url)->toContain("/quotations/{$quotation->public_id}/pdf");
+    expect($url)->not->toContain("/quotations/{$quotation->getKey()}/pdf");
+
+    $response = $this->get($url);
 
     $response->assertSuccessful();
     $response->assertDownload('EST-123.pdf');
